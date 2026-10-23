@@ -80,7 +80,6 @@ const inspectFooterReflow = () => {
   const primaryText = [
     [footer.querySelector(".contact__colophon > p"), footer.querySelector(".contact__colophon > p")],
     [footer.querySelector("ag-signature"), signature.querySelector(".name")],
-    [footer.querySelector(".site-credit"), footer.querySelector(".site-credit .footer-link__label")],
   ].map(([owner, label]) => {
     const walker = document.createTreeWalker(label, NodeFilter.SHOW_TEXT);
     let node;
@@ -1118,66 +1117,13 @@ test("rendered page has no serious WCAG A or AA violations", async ({ page }) =>
   expect(seriousViolations).toEqual([]);
 });
 
-test("Areal loads its variable styles and follows manual and system themes without reflow", async ({ page }) => {
-  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
-  const fontResponse = page.waitForResponse(response => response.url().includes("ABCArealVariable-") && response.url().endsWith(".woff2"));
-  await page.goto("/?qa=areal");
-  expect((await fontResponse).status()).toBe(200);
-  expect(await page.evaluate(async () => {
-    const styles = ['400 16px "ABC Areal"', '600 16px "ABC Areal"', 'italic 400 16px "ABC Areal"'];
-    const faces = await Promise.all(styles.map(style => document.fonts.load(style)));
-    return faces.every(loaded => loaded.length > 0 && loaded.every(face => face.status === "loaded"));
-  })).toBe(true);
-
-  const body = page.locator("body");
-  const paragraph = page.locator(".practice-statement p");
-  const geometry = () => paragraph.evaluate(element => {
-    // Compare actual line breaks, not platform-specific glyph ink/hinting bounds.
-    const lines = new Map();
-    const nodes = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
-    const range = document.createRange();
-    for (let node = nodes.nextNode(); node; node = nodes.nextNode()) {
-      for (let offset = 0; offset < node.length; offset++) {
-        range.setStart(node, offset);
-        range.setEnd(node, offset + 1);
-        const top = range.getBoundingClientRect().top;
-        lines.set(top, (lines.get(top) || "") + node.textContent[offset]);
-      }
-    }
-    return { height: element.getBoundingClientRect().height, lines: [...lines.values()].map(line => line.trim()) };
-  });
-  const initial = await geometry();
-  await page.getByRole("button", { name: "Index", exact: true }).click();
-  const theme = page.getByRole("group", { name: "Colour theme" });
-  for (const [name, axis] of [["Dark", 1], ["Light", 0], ["System", 0]]) {
-    const choice = theme.getByRole("button", { name, exact: true });
-    await choice.focus();
-    await page.keyboard.press("Enter");
-    await expect(choice).toHaveAttribute("aria-pressed", "true");
-    await expect(body).toHaveCSS("font-variation-settings", `"DRKM" ${axis}`);
-    expect(await geometry()).toEqual(initial);
-  }
-  await page.emulateMedia({ colorScheme: "dark" });
-  await expect(body).toHaveCSS("font-variation-settings", '"DRKM" 1');
-  expect(await geometry()).toEqual(initial);
-  // Labels on fixed-colour surfaces follow their own background, in either theme.
-  await expect(page.locator(".archive-card__caption").first()).toHaveCSS("font-variation-settings", '"DRKM" 1');
-  await expect(page.locator(".forum-caption").first()).toHaveCSS("font-variation-settings", '"DRKM" 0');
-
-  await page.goto("/404.html?qa=areal");
-  expect(await page.evaluate(async () => (await document.fonts.load('400 16px "ABC Areal"')).length)).toBeGreaterThan(0);
-  await expect(body).toHaveCSS("font-variation-settings", '"DRKM" 1');
-});
-
 test("footer row and image sources reflow continuously and with enlarged text", async ({ page }, testInfo) => {
   test.setTimeout(90_000);
   await page.setViewportSize({ width: 320, height: 844 });
   await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" });
-  await page.goto("/?qa=areal-footer#contact");
+  await page.goto("/?qa=footer#contact");
   await expect(page.locator("ag-signature")).toHaveAttribute("data-signature-version", /^1\./);
   await page.evaluate(() => document.fonts.ready);
-  const credit = page.getByRole("link", { name: "Typeface: ABC Areal by Dinamo" });
-  await expect(credit).toHaveAttribute("href", "https://are.al.are.na/");
   // Sweep the range and both sides of the old and current wrapping boundaries.
   const widths = [...new Set([
     ...Array.from({ length: 56 }, (_, index) => 320 + index * 64),
@@ -1240,15 +1186,14 @@ test("shared author signature follows site themes and motion without losing nati
   await signature.scrollIntoViewIfNeeded();
   const mark = signature.locator(".mark");
   const author = signature.getByRole("link", { name: "Anton Gorokhovatsky Design & development", exact: true });
-  const typeface = page.getByRole("link", { name: "Typeface: ABC Areal by Dinamo", exact: true });
   const cv = page.locator(".contact__footer").getByRole("link", { name: "Open Olga Shirokostup’s CV as a PDF" });
-  const labels = [signature.locator(".name"), typeface.locator(".footer-link__label")];
-  const links = [author, typeface];
+  const labels = [signature.locator(".name")];
+  const links = [author];
   const verifyUtilityFeedback = async (themeName) => {
     await cv.focus();
     await page.mouse.move(0, 0);
-    const ink = await typeface.evaluate(element => getComputedStyle(element).color);
-    const gradient = await labels[1].evaluate(element => getComputedStyle(element).backgroundImage);
+    const ink = await labels[0].evaluate(element => getComputedStyle(element).color);
+    const gradient = await labels[0].evaluate(element => getComputedStyle(element).backgroundImage);
     let focusColor;
     for (let index = 0; index < links.length; index++) {
       await expect(labels[index]).toHaveCSS("font-size", "14px");
@@ -1288,8 +1233,6 @@ test("shared author signature follows site themes and motion without losing nati
   await page.screenshot({ path: testInfo.outputPath("signature-footer-light.png"), animations: "disabled" });
 
   await cv.focus();
-  await page.keyboard.press(linkTabKey(browserName));
-  await expect(typeface).toBeFocused();
   await page.keyboard.press(linkTabKey(browserName));
   await expect(author).toBeFocused();
   await expect(author).toHaveCSS("outline-style", "solid");
@@ -1333,7 +1276,7 @@ test("author credit remains keyboard accessible when the shared module is unavai
   await author.focus();
   await expect(author).toBeFocused();
   await page.keyboard.press(`Shift+${linkTabKey(browserName)}`);
-  await expect(page.getByRole("link", { name: "Typeface: ABC Areal by Dinamo", exact: true })).toBeFocused();
+  await expect(page.locator(".contact__footer").getByRole("link", { name: "Open Olga Shirokostup’s CV as a PDF" })).toBeFocused();
   await page.keyboard.press(linkTabKey(browserName));
   await expect(author).toBeFocused();
   await page.keyboard.press(linkTabKey(browserName));

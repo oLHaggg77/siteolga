@@ -1,19 +1,3 @@
-@font-face {
-  font-family: "ABC Areal";
-  src: url("/assets/fonts/ABCArealVariable-97fb33de45.woff2") format("woff2");
-  font-weight: 400 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "ABC Areal";
-  src: url("/assets/fonts/ABCArealVariable-97fb33de45.woff2") format("woff2");
-  font-weight: 400 700;
-  font-style: oblique 0deg 12deg;
-  font-display: swap;
-}
-
 :root {
   color-scheme: light;
   --font-darkmode: 0;
@@ -100,7 +84,7 @@
   --measure-prose-narrow: 40ch;
   --measure-editorial: 32ch;
   --serif: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, Georgia, serif;
-  --sans: "ABC Areal", Arial, Helvetica, sans-serif;
+  --sans: Arial, Helvetica, sans-serif;
 }
 
 ::view-transition-old(root),
