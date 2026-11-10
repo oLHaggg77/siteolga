@@ -85,6 +85,6 @@ The first prototype is based on Olga’s supplied website materials and the publ
 
 ## Analytics goals
 
-After visitor consent, the site sends `project_open`, `cv_open`, and `email_click` to counter `111895186`.
+After visitor consent, the site sends `project_open` and `email_click` to counter `111895186`.
 Create matching **JavaScript event** goals in the Metrica dashboard to use them as conversions. Test traffic stubs Metrica;
 no real visitor reports or account configuration are inferred from the browser tests. See `HANDOFF.md` for the setup checklist.

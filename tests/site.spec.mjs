@@ -1096,14 +1096,13 @@ test("analytics goals respect consent and do not replay earlier actions", async 
   await group.getByRole('button', { name: 'Allow', exact: true }).click();
   await page.keyboard.press('Escape');
   await project.click();
-  await page.locator('.contact__footer a[href$=".pdf"]').click();
   await page.getByRole('link', { name: 'Email Olga Shirokostup to work together', exact: true }).click();
-  expect(await page.evaluate(() => window.ym.a.filter(call => call[1] === 'reachGoal').map(call => call[2]))).toEqual(['project_open', 'cv_open', 'email_click']);
+  expect(await page.evaluate(() => window.ym.a.filter(call => call[1] === 'reachGoal').map(call => call[2]))).toEqual(['project_open', 'email_click']);
   await page.getByRole('button', { name: 'Index', exact: true }).click();
   await group.getByRole('button', { name: 'Decline', exact: true }).click();
   await page.keyboard.press('Escape');
   await project.click();
-  expect(await page.evaluate(() => window.ym.a.filter(call => call[1] === 'reachGoal').length)).toBe(3);
+  expect(await page.evaluate(() => window.ym.a.filter(call => call[1] === 'reachGoal').length)).toBe(2);
 });
 
 test("rendered page has no serious WCAG A or AA violations", async ({ page }) => {
@@ -1241,11 +1240,12 @@ test("shared author signature follows site themes and motion without losing nati
   const mark = signature.locator(".mark");
   const author = signature.getByRole("link", { name: "Anton Gorokhovatsky Design & development", exact: true });
   const typeface = page.getByRole("link", { name: "Typeface: ABC Areal by Dinamo", exact: true });
-  const cv = page.locator(".contact__footer").getByRole("link", { name: "Open Olga Shirokostup’s CV as a PDF" });
+  // The footer email is the last professional-contact action before the utility links.
+  const footerEmail = page.locator(".professional-contact--footer").getByRole("link", { name: "shirokostup@gmail.com", exact: true });
   const labels = [signature.locator(".name"), typeface.locator(".footer-link__label")];
   const links = [author, typeface];
   const verifyUtilityFeedback = async (themeName) => {
-    await cv.focus();
+    await footerEmail.focus();
     await page.mouse.move(0, 0);
     const ink = await typeface.evaluate(element => getComputedStyle(element).color);
     const gradient = await labels[1].evaluate(element => getComputedStyle(element).backgroundImage);
@@ -1270,7 +1270,7 @@ test("shared author signature follows site themes and motion without losing nati
         await page.locator(".contact__footer").screenshot({ path: testInfo.outputPath(`signature-focus-${themeName}.png`), animations: "disabled" });
       }
     }
-    await cv.focus();
+    await footerEmail.focus();
     for (const label of labels) await expect(label).toHaveCSS("background-size", "100% 1px, 0px 2px");
     const contrast = await new AxeBuilder({ page }).include(".contact__footer").withRules(["color-contrast"]).analyze();
     expect(contrast.violations).toEqual([]);
@@ -1287,7 +1287,7 @@ test("shared author signature follows site themes and motion without losing nati
   await page.keyboard.press("End");
   await page.screenshot({ path: testInfo.outputPath("signature-footer-light.png"), animations: "disabled" });
 
-  await cv.focus();
+  await footerEmail.focus();
   await page.keyboard.press(linkTabKey(browserName));
   await expect(typeface).toBeFocused();
   await page.keyboard.press(linkTabKey(browserName));

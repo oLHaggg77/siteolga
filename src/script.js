@@ -147,9 +147,8 @@ document.addEventListener("click", (event) => {
   const link = event.target.closest?.("a[href]");
   if (!link) return;
   const href = link.getAttribute("href");
-  const goal = href.startsWith("mailto:") ? "email_click"
-    : href.endsWith("olga-shirokostup-cv.pdf") ? "cv_open" : link.dataset.analyticsGoal;
-  if (!["email_click", "cv_open", "project_open"].includes(goal)) return;
+  const goal = href.startsWith("mailto:") ? "email_click" : link.dataset.analyticsGoal;
+  if (!["email_click", "project_open"].includes(goal)) return;
   window.ym(metricaId, "reachGoal", goal, link.dataset.project ? { project: link.dataset.project } : {});
 });
 

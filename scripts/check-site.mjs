@@ -139,20 +139,15 @@ const professionalContacts = count(html, /class="professional-contact(?:\s[^"]*)
 assert(professionalContacts === 2, "Professional contact must be available in both Index and footer.");
 const mailLinks = [...html.matchAll(/href="(mailto:[^"]+)"/gi)].map((match) => match[1]);
 assert(mailLinks.length >= 3 && new Set(mailLinks).size === 1, "All contact actions must use the same email address.");
-assert(
-  count(html, /href="assets\/olga-shirokostup-cv\.pdf"/gi) === 3,
-  "The original CV must be linked from the introduction, Index and footer.",
-);
-for (const location of ["index", "footer"]) {
-  const contact = html.match(new RegExp(`class="professional-contact professional-contact--${location}">([\\s\\S]*?)</div>`))?.[1];
-  assert(contact?.includes('href="assets/olga-shirokostup-cv.pdf"'), `The ${location} must retain its CV link.`);
-}
+assert(!/olga-shirokostup-cv/i.test(html), "The CV is withdrawn by the owner and must not be linked.");
 const shortcuts = html.match(/<nav class="hero__links"[\s\S]*?<\/nav>/)?.[0];
-for (const destination of ["#work", "#contact", "assets/olga-shirokostup-cv.pdf"]) {
+for (const destination of ["#work", "#contact"]) {
   assert(shortcuts?.includes(`href="${destination}"`), `The introduction needs a visible route to ${destination}.`);
 }
-const cvFile = await readFile(resolve(root, "assets/olga-shirokostup-cv.pdf"));
-assert(cvFile.subarray(0, 4).toString() === "%PDF", "The linked CV must remain a valid PDF file.");
+await access(resolve(root, "assets/olga-shirokostup-cv.pdf")).then(
+  () => failures.push("The withdrawn CV PDF must not be published."),
+  () => {},
+);
 
 // Theme, motion and native-interaction contracts.
 for (const mode of ["system", "light", "dark"]) {
