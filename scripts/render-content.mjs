@@ -32,7 +32,8 @@ export const richText = (value) => {
 export function validateContent(content) {
   text(content.hero, 'Hero');
   for (const key of ['title', 'note']) text(content.practice[key], `Practice ${key}`);
-  for (const key of ['title', 'introduction']) text(content.about[key], `About ${key}`);
+  text(content.about.title, 'About title');
+  if (content.about.introduction !== undefined) text(content.about.introduction, 'About introduction');
   if (!content.about.paragraphs?.length) throw new Error('Biography needs paragraphs.');
   content.about.paragraphs.forEach(richText);
   const ids = new Set();
@@ -94,7 +95,7 @@ export function renderContent(content, arcaSvg) {
   const blocks = {
     hero: `<p class="hero__statement">${e(content.hero)}</p>`,
     practice: `<h2 id="practice-title" data-reveal>${e(content.practice.title)}</h2>\n<p class="practice-statement__note" data-reveal>${e(content.practice.note)}</p>`,
-    'about-intro': `<div class="about__intro"><h2 id="about-title" data-reveal>${e(content.about.title)}</h2><p data-reveal>${e(content.about.introduction)}</p></div>`,
+    'about-intro': `<div class="about__intro"><h2 id="about-title" data-reveal>${e(content.about.title)}</h2>${content.about.introduction ? `<p data-reveal>${e(content.about.introduction)}</p>` : ''}</div>`,
     biography: content.about.paragraphs.map(p => `<p>${richText(p)}</p>`).join('\n'),
     timeline: content.timeline.map(row => `<li${row.illustration ? ' class="timeline__item--arca"' : ''}><span class="timeline__date"><time${/^\d{4}$/.test(row.date) ? ` datetime="${row.date}"` : ''}>${e(row.date)}</time>${row.ongoing ? ongoing : ''}</span><span class="timeline__role">${richText(row.role)}</span>${row.illustration ? arcaSvg : ''}</li>`).join('\n'),
     texts: content.texts.map(item => `<a data-reveal href="${e(item.url)}"><span class="texts__meta">${e(item.meta)}</span><strong>${e(item.title)}</strong><span class="texts__arrow">${arrow}</span></a>`).join('\n'),
